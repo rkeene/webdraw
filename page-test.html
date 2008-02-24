@@ -90,7 +90,7 @@
 			document.getElementById('status_cell').innerHTML = "Status: Ready (Sent: " + requests_sent + ") fi=" + flush_interval + ", rt=" + request_time;
 
 			// Update image
-			if ((curr_date.getTime() - last_update) >= 30000) {
+			if ((curr_date.getTime() - last_update) >= 5000) {
 				last_update = curr_date.getTime();
 
 				document.getElementById('mainImage').src = "/dynamic/image?" + session_id + "," + Math.floor(Math.random() * 2147483647);
@@ -126,13 +126,64 @@
     </script>
   </head>
   <body onLoad="initPage();">
-    <p>Please start moving the mouse around in the box below.  When done, simply click instead of moving.</p>
-    <p><a id="mainImageLink"><img src="blank.png" id="mainImage" alt="This demonstration is pointless if you cannot see images." style="border: solid 1px;"></a></p>
-    <table>
-      <tr>
-        <td id="status_cell">Status: Ready</td>
-      </tr>
-    </table>
-    <p><a href="/static/serv.c">Source</a></p>
+    <h1>Mouse Tracking Tool.</h1>
+    <div>
+      <h2>Demonstration</h2>
+      <div>Please start moving the mouse around in the box below.  When done, simply click instead of moving.</div>
+      <div>
+        <a id="mainImageLink"><img src="blank.png" id="mainImage" alt="This demonstration is pointless if you cannot see images." style="border: solid 1px;"></a><br>
+        <table>
+          <tr>
+            <td id="status_cell">Status: Ready</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h2>A discussion of the uses and limitations of server-side mouse tracking:</h2>
+      <ul>
+        <li>
+          Uses:
+          <ul>
+            <li>
+              Web based versions of traditional interaction systems:
+              <ul>
+                <li>Web based VNC (Remote Frame Buffer) client (e.g., <a href="http://sourceforge.net/projects/ajaxvnc">ajaxvnc</a>)</li>
+                <li>Web based Remote Desktop (Windows RDP) client (e.g., <a href="http://www.peterdamen.com/ajaxrd/">ajaxrd</a>)</li>
+                <li>Web based toolkit (e.g., TkWeb)</li>
+                <li>Web based presentation layer (e.g., WebUI)</li>
+              </ul>
+            </li>
+            <li>
+              Advertisment
+              <ul>
+                <li>A method to detect if people are viewing your page actively (if they, their mouse will probably be moving)</li>
+                <li>Do people move their mouses in any particular pattern over your advertisement that might indicate that care about it at all ?</li>
+              </ul>
+            </li>
+            <li>
+              Usability Studies
+              <ul>
+                <li>Conduct research into how people are using your web page</li>
+              </ul>
+            </li>
+            <li>
+              Malicious
+              <ul>
+                <li>Can your mouse movement be used against you in some interesting ways ?</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>
+          Limitations:
+          <ul>
+            <li>Speed</li>
+            <li>Time</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div><a href="/static/serv.c">Source</a></div>
   </body>
 </html>
