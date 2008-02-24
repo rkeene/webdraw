@@ -41,6 +41,11 @@ struct image_info_st {
 	int32_t imgbuflen;
 };
 
+typedef enum {
+	WEBDRAW_EVENT_MOVE,
+	WEBDRAW_EVENT_CLICK,
+} webdraw_event_t;
+
 
 struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExisting) {
 	struct session_info_st *ret = NULL, *chk_session_list;
@@ -144,7 +149,7 @@ struct image_info_st *get_image_str(const char *sessionid_str) {
 	return(get_image(sessionid));
 }
 
-int handle_event(uint32_t sessionid, uint16_t x, uint16_t y) {
+int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, webdraw_event_t type) {
 	struct session_info_st *curr_sess = NULL;
 	FILE *pngfp;
 
@@ -174,6 +179,11 @@ int handle_event(uint32_t sessionid, uint16_t x, uint16_t y) {
 		gdImageLine(curr_sess->imgptr, curr_sess->lastx, curr_sess->lasty, x, y, gdAntiAliased);
 	}
 
+	if (curr_sess->imgptr && type == WEBDRAW_EVENT_CLICK) {
+//		void gdImageFilledArc(gdImagePtr im, int cx, int cy, int w, int h, int s, int e, int color, int style) (FUNCTION)
+		gdImageFilledArc(curr_sess->imgptr, x, y, 5, 5, 0, 360, curr_sess->img_color_black, gdArc);
+	}
+
 	curr_sess->lastx = x;
 	curr_sess->lasty = y;
 	pthread_mutex_unlock(&curr_sess->imgptr_mut);
@@ -184,7 +194,7 @@ int handle_event(uint32_t sessionid, uint16_t x, uint16_t y) {
 	return(0);
 }
 
-int handle_event_str(char *str) {
+int handle_event_str(char *str, webdraw_event_t type) {
 	uint32_t sessionid;
 	uint16_t x, y;
 	char *sessionid_str, *x_str, *y_str;
@@ -208,7 +218,7 @@ int handle_event_str(char *str) {
 	x = strtoul(x_str, NULL, 10);
 	y = strtoul(y_str, NULL, 10);
 
-	return(handle_event(sessionid, x, y));
+	return(handle_event(sessionid, x, y, type));
 }
 
 /* Not HTTP/1.0 compliant, yet */
@@ -219,7 +229,7 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	char *request_line, *request_line_end_p, *request_line_operation, *request_line_resource, *request_line_protocol;
 	char *curr_header_p, *next_header_p, *curr_header_var, *curr_header_val;
 	int fd, *fd_p;
-	int abort = 0, close_conn;
+	int abort = 0, close_conn, invalid_request = 0;
 
 	struct image_info_st *imginfo = NULL;
 	struct stat fileinfo;
@@ -299,6 +309,7 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 
 		if (strcasecmp(request_line_operation, "GET") != 0) {
 			/* We only support GET */
+			invalid_request = 1;
 			break;
 		}
 
@@ -354,31 +365,18 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 		}
 
 		/* Process request */
-		if (strncmp(request_line_resource, "/event/move?", 12) == 0) {
+		if (strncmp(request_line_resource, "/event/", 7) == 0) {
 			/* Process an event */
-			event_ret = handle_event_str(request_line_resource + 12);
-
-			/* Reply to event */
-			if (event_ret == 0) {
-				http_reply_code = 200;
-				http_reply_msg = "OK";
-				http_reply_content_type = "text/plain";
-				http_reply_body_file = NULL;
-
-				/* Body should be a valid JavaScript command, it will be eval()'d */
-				http_reply_body = "";
-				http_reply_content_length = strlen(http_reply_body);
+			if (strncmp(request_line_resource + 7, "move?", 5) == 0) {
+printf("Move event: %s\n", request_line_resource);
+				event_ret = handle_event_str(request_line_resource + 12, WEBDRAW_EVENT_MOVE);
+			} else if (strncmp(request_line_resource + 7, "click?", 6) == 0) {
+printf("Click event: %s\n", request_line_resource);
+				event_ret = handle_event_str(request_line_resource + 13, WEBDRAW_EVENT_CLICK);
 			} else {
-				http_reply_code = 500;
-				http_reply_msg = "Event Error";
-				http_reply_content_type = "text/plain";
-				http_reply_body = "Event Error";
-				http_reply_body_file = NULL;
-				http_reply_content_length = strlen(http_reply_body);
+printf("Invalid event: %s\n", request_line_resource);
+				event_ret = -1;
 			}
-		} else if (strncmp(request_line_resource, "/event/click?", 13) == 0) {
-			/* Process an event */
-			event_ret = handle_event_str(request_line_resource + 13);
 
 			/* Reply to event */
 			if (event_ret == 0) {
@@ -391,6 +389,7 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 				http_reply_body = "";
 				http_reply_content_length = strlen(http_reply_body);
 			} else {
+printf("event error: %s\n", request_line_resource);
 				http_reply_code = 500;
 				http_reply_msg = "Event Error";
 				http_reply_content_type = "text/plain";

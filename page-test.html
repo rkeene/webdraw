@@ -15,8 +15,7 @@
 	var max_flush_interval = 2048;
 	var session_id = Math.floor(Math.random() * 2147483647);
 
-	function sendMouseMoveCoords(eventid) {
-		var imgobj = this;
+	function sendUpdate(eventid, type, imgobj) {
 		var pos_x;
 		var pos_y;
 		var curr_date;
@@ -61,7 +60,9 @@
 			// Reinstate object if needed
 			imgobj = document.getElementById('mainImage');
 			if (imgobj) {
-				imgobj.onmousemove = sendMouseMoveCoords;
+				if (!imgobj.onmousemove) {
+					imgobj.onmousemove = sendMouseMove;
+				}
 			}
 
 			// Calculate number of requests this is in response to
@@ -101,7 +102,7 @@
 		}
 
 		// Send AJAX event
-		xmlHttp.open("get", "/event/move?" + session_id + "," + pos_x + "," + pos_y);
+		xmlHttp.open("get", "/event/" + type + "?" + session_id + "," + pos_x + "," + pos_y);
 		xmlHttp.send(null);
 
 		// Update status
@@ -112,15 +113,25 @@
 		curr_date = new Date();
 		last_request_time = curr_date.getTime();
 
-		// Setup a write barrier every 48 requests
-		if (requests_sent % flush_interval == 0) {
+		// Setup a write barrier every N requests (adaptive)
+		if (requests_sent % flush_interval == 0 || type == "click") {
 			imgobj.onmousemove = null;
 		}
 	}
 
+	function sendMouseMove(eventid) {
+		sendUpdate(eventid, "move", this);
+	}
+
+	function sendMouseClick(eventid) {
+		sendUpdate(eventid, "click", this);
+		document.getElementById('mainImage').src = "/dynamic/image?" + session_id + "," + Math.floor(Math.random() * 2147483647);
+	}
+
 	function initPage() {
-		document.getElementById('mainImage').onmousemove = sendMouseMoveCoords;
-		document.getElementById('mainImageLink').href = "/dynamic/image?" + session_id;
+		document.getElementById('mainImage').onmousemove = sendMouseMove;
+		document.getElementById('mainImage').onmouseup = sendMouseClick;
+		document.getElementById('viewImageLink').href = "/dynamic/image?" + session_id;
 	}
 -->
     </script>
@@ -129,9 +140,9 @@
     <h1>Mouse Tracking Tool.</h1>
     <div>
       <h2>Demonstration</h2>
-      <div>Please start moving the mouse around in the box below.  When done, simply click instead of moving.</div>
+      <div>Please start moving the mouse around in the box below.  When done click <a id="viewImageLink">here</a>.</div>
       <div>
-        <a id="mainImageLink"><img src="blank.png" id="mainImage" alt="This demonstration is pointless if you cannot see images." style="border: solid 1px;"></a><br>
+        <img src="blank.png" id="mainImage" alt="This demonstration is pointless if you cannot see images." style="border: solid 1px;"><br>
         <table>
           <tr>
             <td id="status_cell">Status: Ready</td>
