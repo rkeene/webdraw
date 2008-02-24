@@ -449,7 +449,7 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 			/* Return an error */
 			http_reply_code = 404;
 			http_reply_msg = "Resource not found";
-			http_reply_body = "<html><head><title>Resource not found</title></head><body><h1>Resource not found</h1><br>This HTTP is very limited.</body></html>";
+			http_reply_body = "<html><head><title>Resource not found</title></head><body><h1>Resource not found</h1><br>This HTTP server offers very limited resources.</body></html>";
 			http_reply_body_file = NULL;
 			http_reply_content_type = "text/html";
 			http_reply_content_length = strlen(http_reply_body);
