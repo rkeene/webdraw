@@ -1,0 +1,110 @@
+<html>
+  <head>
+    <title>Draw Web</title>
+  </head>
+  <body>
+    <p>Please start moving the mouse around in the box below.  When done, simply click instead of moving.</p>
+    <a id="mainImageLink"><img src="blank.png" id="mainImage" alt="This demonstration is pointless if you cannot see images." border="1"></a><br>
+    <table>
+      <tr>
+        <td id="status_cell">Status: Ready</td>
+      </tr>
+    </table>
+    <p><a href="/static/serv.c">Source</a></p>
+  </body>
+  <script type="text/javascript">
+<!--
+	var xmlHttp = null;
+	var requests_sent = 0;
+	var flush_interval = 48;
+	var last_request_time = 0;
+	var responsiveness = 500;
+	var session_id = Math.floor(Math.random() * 2147483647);
+
+	function sendMouseMoveCoords(eventid) {
+		var imgobj = this;
+		var pos_x;
+		var pos_y;
+		var curr_date;
+
+		if (!eventid) {
+			// MSIE
+			pos_x = window.event.x - imgobj.x;
+			pos_y = window.event.y - imgobj.y;
+		} else {
+			// Everyone else.
+			pos_x = eventid.pageX - imgobj.x;
+			pos_y = eventid.pageY - imgobj.y;
+		}
+
+		// Try to get the right object for different browser
+		try {
+			// Firefox, Opera 8.0+, Safari
+			xmlHttp = new XMLHttpRequest();
+		} catch (e) {
+			// Internet Explorer
+			try {
+				xmlHttp = new ActiveXObject("Msxml2.XMLHTTP");
+			} catch (e) {
+				xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+		}
+
+		if (!xmlHttp) {
+			return;
+		}
+        
+		xmlHttp.onreadystatechange = function() {
+			var imgobj;
+			var curr_date;
+			var request_time;
+
+			if (xmlHttp.readyState != 4) {
+				return;
+			}
+
+			// Reinstate object if needed
+			imgobj = document.getElementById('mainImage');
+			if (imgobj) {
+				imgobj.onmousemove = sendMouseMoveCoords;
+			}
+
+			// Calculate a flush interval that will keep
+			// the buffer atmost 500ms desynced
+			curr_date = new Date();
+			request_time  = curr_date.getTime() - last_request_time;
+			if (request_time > responsiveness) {
+				flush_interval = Math.ceil(flush_interval / 2);
+			} else if (request_time < (responsiveness / 2)) {
+				flush_interval *= 2;
+			}
+
+			// Update status bar
+			document.getElementById('status_cell').innerHTML = "Status: Ready (Sent: " + requests_sent + ") fi=" + flush_interval + ", rt=" + request_time;
+
+			// Presumably we would do stuff here ?
+		}
+
+		// Send AJAX event
+		xmlHttp.open("get", "/event?" + session_id + "," + pos_x + "," + pos_y);
+		xmlHttp.send(null);
+
+		// Update status
+		document.getElementById('status_cell').innerHTML = "Status: XMIT (Sent: " + requests_sent + ")";
+
+		// Keep track of time and number of requests sent, for further calculation
+		requests_sent++;
+		curr_date = new Date();
+		last_request_time = curr_date.getTime();
+
+		// Setup a write barrier every 48 requests
+		if (requests_sent % flush_interval == 0) {
+			imgobj.onmousemove = null;
+		}
+	}
+
+	document.getElementById('mainImage').onmousemove = sendMouseMoveCoords;
+	document.getElementById('mainImageLink').href = "/image?" + session_id;
+-->
+  </script>
+</html>
