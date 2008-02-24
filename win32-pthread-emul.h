@@ -17,12 +17,12 @@
 #    define _WIN32_WINNT 0x500 /* WINBASE.H - Enable SignalObjectAndWait */
 #    include <process.h>
 #    include <windows.h>
-#    define THREAD_FUNCTION (unsigned (__stdcall *) (void *))
-#    define THREAD_FUNCTION_RETURN unsigned
+#    define THREAD_FUNCTION_PROTO THREAD_FUNCTION_RETURN (__stdcall *) (void *)
+#    define THREAD_FUNCTION_RETURN unsigned int
 #    define THREAD_SPECIFIC_INDEX DWORD
 #    define pthread_t HANDLE
 #    define pthread_attr_t DWORD
-#    define pthread_create(thhandle, attr, thfunc, tharg) ((int) ((*thhandle = (HANDLE) _beginthreadex(NULL, 0, THREAD_FUNCTION thfunc, tharg, 0, NULL)) == NULL))
+#    define pthread_create(thhandle, attr, thfunc, tharg) ((int) ((*thhandle = (HANDLE) _beginthreadex(NULL, 0, (THREAD_FUNCTION_PROTO) thfunc, tharg, 0, NULL)) == NULL))
 #    define pthread_join(thread, result) ((WaitForSingleObject((thread), INFINITE) != WAIT_OBJECT_0) || !CloseHandle(thread))
 #    define pthread_detach(thread) { if (thread != NULL) { CloseHandle(thread); }}
 #    define thread_sleep(nms) Sleep(nms)
@@ -33,6 +33,7 @@
 #    define pthread_self() GetCurrentThreadId()
 #  else
 #    include <pthread.h>
+#    define THREAD_FUNCTION_RETURN void *
 #  endif
 
 /* Syncrhronization macros: Win32->pthread */
