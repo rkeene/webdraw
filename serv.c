@@ -3,9 +3,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <signal.h>
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -22,6 +19,11 @@
 
 /* Pthreads, or on win32, emulated pthreads */
 #include "win32-pthread-emul.h"
+
+/* Win32 requires O_BINARY as an option to open(), but noone else even has it defined */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 struct session_info_st;
 struct session_info_st {
@@ -369,13 +371,10 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 		if (strncmp(request_line_resource, "/event/", 7) == 0) {
 			/* Process an event */
 			if (strncmp(request_line_resource + 7, "move?", 5) == 0) {
-printf("Move event: %s\n", request_line_resource);
 				event_ret = handle_event_str(request_line_resource + 12, WEBDRAW_EVENT_MOVE);
 			} else if (strncmp(request_line_resource + 7, "click?", 6) == 0) {
-printf("Click event: %s\n", request_line_resource);
 				event_ret = handle_event_str(request_line_resource + 13, WEBDRAW_EVENT_CLICK);
 			} else {
-printf("Invalid event: %s\n", request_line_resource);
 				event_ret = -1;
 			}
 
@@ -390,7 +389,6 @@ printf("Invalid event: %s\n", request_line_resource);
 				http_reply_body = "";
 				http_reply_content_length = strlen(http_reply_body);
 			} else {
-printf("event error: %s\n", request_line_resource);
 				http_reply_code = 500;
 				http_reply_msg = "Event Error";
 				http_reply_content_type = "text/plain";
