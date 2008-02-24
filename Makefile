@@ -15,7 +15,7 @@ put-web:
 	$(MAKE) clean serv.exe
 	rm -f *.o
 	cp * $(WEBDIR)/
-	rm -f $(WEBDIR)/*.html
+	rm -f $(WEBDIR)/*.html $(WEBDIR)/blank.png
 
 clean:
 	rm -f serv serv.exe *.o
