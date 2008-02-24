@@ -1,18 +1,9 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
   <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Draw Web</title>
-  </head>
-  <body>
-    <p>Please start moving the mouse around in the box below.  When done, simply click instead of moving.</p>
-    <a id="mainImageLink"><img src="blank.png" id="mainImage" alt="This demonstration is pointless if you cannot see images." border="1"></a><br>
-    <table>
-      <tr>
-        <td id="status_cell">Status: Ready</td>
-      </tr>
-    </table>
-    <p><a href="/static/serv.c">Source</a></p>
-  </body>
-  <script type="text/javascript">
+    <script type="text/javascript">
 <!--
 	var xmlHttp = null;
 	var requests_sent = 0;
@@ -127,8 +118,21 @@
 		}
 	}
 
-	document.getElementById('mainImage').onmousemove = sendMouseMoveCoords;
-	document.getElementById('mainImageLink').href = "/dynamic/image?" + session_id;
+	function initPage() {
+		document.getElementById('mainImage').onmousemove = sendMouseMoveCoords;
+		document.getElementById('mainImageLink').href = "/dynamic/image?" + session_id;
+	}
 -->
-  </script>
+    </script>
+  </head>
+  <body onLoad="initPage();">
+    <p>Please start moving the mouse around in the box below.  When done, simply click instead of moving.</p>
+    <p><a id="mainImageLink"><img src="blank.png" id="mainImage" alt="This demonstration is pointless if you cannot see images." style="border: solid 1px;"></a></p>
+    <table>
+      <tr>
+        <td id="status_cell">Status: Ready</td>
+      </tr>
+    </table>
+    <p><a href="/static/serv.c">Source</a></p>
+  </body>
 </html>
