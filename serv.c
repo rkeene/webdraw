@@ -20,6 +20,7 @@
 #include <gd.h>
 #include <gdfonts.h>
 
+/* Pthreads, or on win32, emulated pthreads */
 #include "win32-pthread-emul.h"
 
 struct session_info_st;
