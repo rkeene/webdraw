@@ -1,28 +1,21 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
   <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Draw Web</title>
-  </head>
-  <body>
-    <p>Please start moving the mouse around in the box below.  When done, simply click instead of moving.</p>
-    <a id="mainImageLink"><img src="blank.png" id="mainImage" alt="This demonstration is pointless if you cannot see images." border="1"></a><br>
-    <table>
-      <tr>
-        <td id="status_cell">Status: Ready</td>
-      </tr>
-    </table>
-    <p><a href="/static/serv.c">Source</a></p>
-  </body>
-  <script type="text/javascript">
+    <script type="text/javascript">
 <!--
 	var xmlHttp = null;
 	var requests_sent = 0;
+	var last_requests_sent = 0;
 	var flush_interval = 48;
 	var last_request_time = 0;
-	var responsiveness = 500;
+	var last_update = 0;
+	var responsiveness = 50;
+	var max_flush_interval = 2048;
 	var session_id = Math.floor(Math.random() * 2147483647);
 
-	function sendMouseMoveCoords(eventid) {
-		var imgobj = this;
+	function sendUpdate(eventid, type, imgobj) {
 		var pos_x;
 		var pos_y;
 		var curr_date;
@@ -58,6 +51,7 @@
 			var imgobj;
 			var curr_date;
 			var request_time;
+			var num_requests;
 
 			if (xmlHttp.readyState != 4) {
 				return;
@@ -66,27 +60,49 @@
 			// Reinstate object if needed
 			imgobj = document.getElementById('mainImage');
 			if (imgobj) {
-				imgobj.onmousemove = sendMouseMoveCoords;
+				if (!imgobj.onmousemove) {
+					imgobj.onmousemove = sendMouseMove;
+				}
+			}
+
+			// Calculate number of requests this is in response to
+			num_requests = requests_sent - last_requests_sent;
+			last_requests_sent = requests_sent;
+			if (num_requests == 0) {
+				num_requests = 1;
 			}
 
 			// Calculate a flush interval that will keep
 			// the buffer atmost 500ms desynced
 			curr_date = new Date();
-			request_time  = curr_date.getTime() - last_request_time;
+			request_time = Math.ceil((curr_date.getTime() - last_request_time) / num_requests);
 			if (request_time > responsiveness) {
 				flush_interval = Math.ceil(flush_interval / 2);
 			} else if (request_time < (responsiveness / 2)) {
 				flush_interval *= 2;
 			}
+			if (flush_interval < 1) {
+				flush_interval = 1;
+			} else if (flush_interval > max_flush_interval) {
+				flush_interval = max_flush_interval;
+			}
 
 			// Update status bar
 			document.getElementById('status_cell').innerHTML = "Status: Ready (Sent: " + requests_sent + ") fi=" + flush_interval + ", rt=" + request_time;
 
-			// Presumably we would do stuff here ?
+			// Update image
+			if ((curr_date.getTime() - last_update) >= 5000) {
+				last_update = curr_date.getTime();
+
+				document.getElementById('mainImage').src = "/dynamic/image?" + session_id + "," + Math.floor(Math.random() * 2147483647);
+			}
+
+			// Do stuff here.
+			eval(xmlHttp.responseText);
 		}
 
 		// Send AJAX event
-		xmlHttp.open("get", "/event/move?" + session_id + "," + pos_x + "," + pos_y);
+		xmlHttp.open("get", "/event/" + type + "?" + session_id + "," + pos_x + "," + pos_y);
 		xmlHttp.send(null);
 
 		// Update status
@@ -97,14 +113,88 @@
 		curr_date = new Date();
 		last_request_time = curr_date.getTime();
 
-		// Setup a write barrier every 48 requests
-		if (requests_sent % flush_interval == 0) {
+		// Setup a write barrier every N requests (adaptive)
+		if (requests_sent % flush_interval == 0 || type == "click") {
 			imgobj.onmousemove = null;
 		}
 	}
 
-	document.getElementById('mainImage').onmousemove = sendMouseMoveCoords;
-	document.getElementById('mainImageLink').href = "/dynamic/image?" + session_id;
+	function sendMouseMove(eventid) {
+		sendUpdate(eventid, "move", this);
+	}
+
+	function sendMouseClick(eventid) {
+		sendUpdate(eventid, "click", this);
+		document.getElementById('mainImage').src = "/dynamic/image?" + session_id + "," + Math.floor(Math.random() * 2147483647);
+	}
+
+	function initPage() {
+		document.getElementById('mainImage').onmousemove = sendMouseMove;
+		document.getElementById('mainImage').onmouseup = sendMouseClick;
+		document.getElementById('viewImageLink').href = "/dynamic/image?" + session_id;
+	}
 -->
-  </script>
+    </script>
+  </head>
+  <body onLoad="initPage();">
+    <h1>Mouse Tracking Tool.</h1>
+    <div>
+      <h2>Demonstration</h2>
+      <div>Please start moving the mouse around in the box below.  When done click <a id="viewImageLink">here</a>.</div>
+      <div>
+        <img src="blank.png" id="mainImage" alt="This demonstration is pointless if you cannot see images." style="border: solid 1px;"><br>
+        <table>
+          <tr>
+            <td id="status_cell">Status: Ready</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h2>A discussion of the uses and limitations of server-side mouse tracking:</h2>
+      <ul>
+        <li>
+          Uses:
+          <ul>
+            <li>
+              Web based versions of traditional interaction systems:
+              <ul>
+                <li>Web based VNC (Remote Frame Buffer) client (e.g., <a href="http://sourceforge.net/projects/ajaxvnc">ajaxvnc</a>)</li>
+                <li>Web based Remote Desktop (Windows RDP) client (e.g., <a href="http://www.peterdamen.com/ajaxrd/">ajaxrd</a>)</li>
+                <li>Web based toolkit (e.g., TkWeb)</li>
+                <li>Web based presentation layer (e.g., WebUI)</li>
+              </ul>
+            </li>
+            <li>
+              Advertisment
+              <ul>
+                <li>A method to detect if people are viewing your page actively (if they, their mouse will probably be moving)</li>
+                <li>Do people move their mouses in any particular pattern over your advertisement that might indicate that care about it at all ?</li>
+              </ul>
+            </li>
+            <li>
+              Usability Studies
+              <ul>
+                <li>Conduct research into how people are using your web page</li>
+              </ul>
+            </li>
+            <li>
+              Malicious
+              <ul>
+                <li>Can your mouse movement be used against you in some interesting ways ?</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>
+          Limitations:
+          <ul>
+            <li>Speed</li>
+            <li>Time</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div><a href="/static/serv.c">Source</a></div>
+  </body>
 </html>
