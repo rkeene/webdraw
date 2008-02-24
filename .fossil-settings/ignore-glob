@@ -1,0 +1,6 @@
+.*.sw?
+.*.sw?/*
+serv
+serv.exe
+serv.exe/*
+serv/*

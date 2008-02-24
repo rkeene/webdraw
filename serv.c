@@ -1,10 +1,11 @@
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <signal.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <pthread.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -15,6 +16,8 @@
 /* GD */
 #include <gd.h>
 #include <gdfonts.h>
+
+#include "win32-pthread-emul.h"
 
 struct session_info_st;
 struct session_info_st {
@@ -204,7 +207,7 @@ struct session_info_st *handle_event_str(char *str) {
 }
 
 /* Not HTTP/1.0 compliant, yet */
-void *handle_connection(void *arg) {
+THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	ssize_t bytes_recv;
 	size_t buflen, bufused;
 	char buf[16384], *buf_p, *request_end_p;
@@ -501,7 +504,7 @@ printf("Invoking cleanup-exit.\n");
 			}
 		} else {
 			/* File */
-			srcfd = open(http_reply_body_file, O_RDONLY);
+			srcfd = open(http_reply_body_file, O_RDONLY | O_BINARY);
 
 			bytes_to_send = http_reply_content_length;
 			reply_buf_p = http_reply_body;
@@ -572,8 +575,11 @@ printf("Invoking cleanup-exit.\n");
 	close(fd);
 	free(fd_p);
 
-	pthread_exit(NULL);
+#ifdef _WIN32
+	return(0);
+#else
 	return(NULL);
+#endif
 }
 
 int main(int argc, char **argv) {
@@ -582,9 +588,24 @@ int main(int argc, char **argv) {
 	int masterfd, currfd, *currfd_copy;
 	int bind_ret, listen_ret, pthcreate_ret;
 	uint16_t parm_port = 8013;
+#ifdef _WIN32
+	/* Win32 Specific Crap */
+	WSADATA wsaData;
+
+	if (WSAStartup(MAKEWORD(2, 0), &wsaData) != 0) {
+		fprintf(stderr, "WSAStartup() failed.  Blame Microsoft.\n");
+		return(EXIT_FAILURE);
+	}
+	if (wsaData.wVersion != MAKEWORD(2, 0)) {
+		WSACleanup();
+		fprintf(stderr, "WSAStartup() returned unexpected version.  Blame Microsoft.\n");
+		return(EXIT_FAILURE);
+	}
+#endif
 
 	/* Initialize session list mutex */
 	pthread_mutex_init(&session_list_mut, NULL);
+
 
 	/* Setup listening socket on appropriate port */
 	if (argc == 2) {
@@ -614,7 +635,9 @@ int main(int argc, char **argv) {
 		bind_ret = bind(masterfd, (struct sockaddr *) &localaddr, sizeof(localaddr));
 		if (bind_ret != 0) {
 			perror("bind");
+#ifndef _WIN32
 			sleep(5);
+#endif
 			continue;
 		}
 
@@ -627,7 +650,9 @@ int main(int argc, char **argv) {
 		return(EXIT_FAILURE);
 	}
 
+#ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
+#endif
 
 	/* Handle incoming connections and create worker threads to handle them */
 	while (1) {
