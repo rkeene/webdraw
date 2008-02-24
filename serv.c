@@ -3,6 +3,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <signal.h>
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>

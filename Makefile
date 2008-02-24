@@ -11,4 +11,4 @@ serv.exe: serv.c
 
 .PHONY: clean
 clean:
-	rm -f serv *.o
+	rm -f serv serv.exe *.o
