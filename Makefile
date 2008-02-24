@@ -9,6 +9,11 @@ serv.o: serv.c
 serv.exe: serv.c
 	i586-mingw32msvc-gcc -Wall -Werror -g3 -I/home/rkeene/root/windows-i386/include $^ -L/home/rkeene/root/windows-i386/lib -static -lgd -lpng -lz -lws2_32 -o $@
 
-.PHONY: clean
+.PHONY: clean put-web
+put-web:
+	$(MAKE) clean serv.exe
+	rm -f *.o
+	cp * /web/rkeene/tmp/webdraw/
+
 clean:
 	rm -f serv serv.exe *.o
