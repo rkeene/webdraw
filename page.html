@@ -86,7 +86,7 @@
 		}
 
 		// Send AJAX event
-		xmlHttp.open("get", "/event?" + session_id + "," + pos_x + "," + pos_y);
+		xmlHttp.open("get", "/event/move?" + session_id + "," + pos_x + "," + pos_y);
 		xmlHttp.send(null);
 
 		// Update status
@@ -104,7 +104,7 @@
 	}
 
 	document.getElementById('mainImage').onmousemove = sendMouseMoveCoords;
-	document.getElementById('mainImageLink').href = "/image?" + session_id;
+	document.getElementById('mainImageLink').href = "/dynamic/image?" + session_id;
 -->
   </script>
 </html>

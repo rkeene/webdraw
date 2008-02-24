@@ -47,6 +47,7 @@ struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExi
 
 	/* search for an existing session */
 	pthread_mutex_lock(&session_list_mut);
+
 	for (chk_session_list = session_list; chk_session_list; chk_session_list = chk_session_list->_next) {
 		if (chk_session_list->sessionid == sessionid) {
 			ret = chk_session_list;
@@ -54,7 +55,7 @@ struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExi
 		}
 	}
 
-	/* Step 1a: If not, create it and initialize it */
+	/* create it and initialize it if needed */
 	if (!ret && createIfNotExisting) {
 		ret = malloc(sizeof(*ret));
 		if (ret) {
@@ -69,6 +70,7 @@ struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExi
 			session_list = ret;
 		}
 	}
+
 	pthread_mutex_unlock(&session_list_mut);
 
 	return(ret);
@@ -81,11 +83,11 @@ void cleanup_sessions(int session_age_limit) {
 	expire_time = time(NULL) - session_age_limit;
 
 	pthread_mutex_lock(&session_list_mut);
+
 	for (chk_session_list = session_list; chk_session_list; chk_session_list = next) {
 		next = chk_session_list->_next;
 
 		if (chk_session_list->last_used_time < expire_time) {
-printf("Cleaning up session %p\n", chk_session_list);
 			if (chk_session_list) {
 				if (chk_session_list->imgptr) {
 					gdImageDestroy(chk_session_list->imgptr);
@@ -106,6 +108,7 @@ printf("Cleaning up session %p\n", chk_session_list);
 			prev = chk_session_list;
 		}
 	}
+
 	pthread_mutex_unlock(&session_list_mut);
 
 	return;
@@ -141,19 +144,17 @@ struct image_info_st *get_image_str(const char *sessionid_str) {
 	return(get_image(sessionid));
 }
 
-struct session_info_st *handle_event(uint32_t sessionid, uint16_t x, uint16_t y) {
+int handle_event(uint32_t sessionid, uint16_t x, uint16_t y) {
 	struct session_info_st *curr_sess = NULL;
 	FILE *pngfp;
 
 	curr_sess = find_session_info(sessionid, 1);
 
 	if (!curr_sess) {
-		return(NULL);
+		return(-1);
 	}
 
-	/* Step 2: Update session with new data */
-printf("event for sessid %i, (%i,%i)->(%i,%i) handled by %p\n", sessionid,curr_sess->lastx,curr_sess->lasty,x,y, curr_sess);
-
+	/* Update session with new data */
 	pthread_mutex_lock(&curr_sess->imgptr_mut);
 	if (!curr_sess->imgptr) {
 		pngfp = fopen("blank.png", "rb");
@@ -177,12 +178,13 @@ printf("event for sessid %i, (%i,%i)->(%i,%i) handled by %p\n", sessionid,curr_s
 	curr_sess->lasty = y;
 	pthread_mutex_unlock(&curr_sess->imgptr_mut);
 
-	/* Step 3: Update session information and return current handler */
+	/* Update session information */
 	curr_sess->last_used_time = time(NULL);
-	return(curr_sess);
+
+	return(0);
 }
 
-struct session_info_st *handle_event_str(char *str) {
+int handle_event_str(char *str) {
 	uint32_t sessionid;
 	uint16_t x, y;
 	char *sessionid_str, *x_str, *y_str;
@@ -190,14 +192,14 @@ struct session_info_st *handle_event_str(char *str) {
 	sessionid_str = str;
 	x_str = strchr(sessionid_str, ',');
 	if (!x_str) {
-		return(NULL);
+		return(-1);
 	}
 	*x_str = '\0';
 	x_str++;
 
 	y_str = strchr(x_str, ',');
 	if (!y_str) {
-		return(NULL);
+		return(-1);
 	}
 	*y_str = '\0';
 	y_str++;
@@ -219,7 +221,6 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	int fd, *fd_p;
 	int abort = 0, close_conn;
 
-	struct session_info_st *event_ret;
 	struct image_info_st *imginfo = NULL;
 	struct stat fileinfo;
 	ssize_t sent_bytes, read_bytes;
@@ -228,7 +229,7 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	char *http_reply_msg, *http_reply_body, *http_reply_body_file, *http_reply_content_type;
 	int http_reply_code, http_reply_content_length;
 	int reply_buf_len;
-	int stat_ret;
+	int stat_ret, event_ret;
 	int srcfd;
 
 	/* Determine our args original values */
@@ -353,12 +354,12 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 		}
 
 		/* Process request */
-		if (strncmp(request_line_resource, "/event?", 7) == 0) {
+		if (strncmp(request_line_resource, "/event/move?", 12) == 0) {
 			/* Process an event */
-			event_ret = handle_event_str(request_line_resource + 7);
+			event_ret = handle_event_str(request_line_resource + 12);
 
 			/* Reply to event */
-			if (event_ret) {
+			if (event_ret == 0) {
 				http_reply_code = 200;
 				http_reply_msg = "OK";
 				http_reply_content_type = "text/plain";
@@ -375,7 +376,29 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 				http_reply_body_file = NULL;
 				http_reply_content_length = strlen(http_reply_body);
 			}
-		} else if (strncmp(request_line_resource, "/image?", 7) == 0) {
+		} else if (strncmp(request_line_resource, "/event/click?", 13) == 0) {
+			/* Process an event */
+			event_ret = handle_event_str(request_line_resource + 13);
+
+			/* Reply to event */
+			if (event_ret == 0) {
+				http_reply_code = 200;
+				http_reply_msg = "OK";
+				http_reply_content_type = "text/plain";
+				http_reply_body_file = NULL;
+
+				/* Body should be a valid JavaScript command, it will be eval()'d */
+				http_reply_body = "";
+				http_reply_content_length = strlen(http_reply_body);
+			} else {
+				http_reply_code = 500;
+				http_reply_msg = "Event Error";
+				http_reply_content_type = "text/plain";
+				http_reply_body = "Event Error";
+				http_reply_body_file = NULL;
+				http_reply_content_length = strlen(http_reply_body);
+			}
+		} else if (strncmp(request_line_resource, "/dynamic/image?", 7) == 0) {
 			/* Return an image */
 			imginfo = get_image_str(request_line_resource + 7);
 
@@ -422,36 +445,11 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 			http_reply_content_type = "text/plain";
 			http_reply_body = NULL;
 			http_reply_body_file = "serv.c";
-		} else if (strcmp(request_line_resource, "/static/wz_jsgraphics.js") == 0) {
-			/* Return a file */
-			http_reply_code = 200;
-			http_reply_msg = "OK";
-			http_reply_content_type = "text/javascript";
-			http_reply_body = NULL;
-			http_reply_body_file = "wz_jsgraphics.js";
-#if 0
-		} else if (strcmp(request_line_resource, "/cleanup") == 0) {
-			/* Debugging cleanup */
-printf("Invoking cleanup.\n");
-			cleanup_sessions(0);
-
-			http_reply_code = 200;
-			http_reply_msg = "OK";
-			http_reply_body = "<html><head><title>Cleanup</title></head><body><h1>Cleanup successfully completed.</h1></body></html>";
-			http_reply_body_file = NULL;
-			http_reply_content_type = "text/html";
-			http_reply_content_length = strlen(http_reply_body);
-		} else if (strcmp(request_line_resource, "/exit") == 0) {
-			/* Debugging exit */
-printf("Invoking cleanup-exit.\n");
-			cleanup_sessions(0);
-			exit(0);
-#endif
 		} else {
 			/* Return an error */
 			http_reply_code = 404;
-			http_reply_msg = "file not found";
-			http_reply_body = "<html><head><title>file not found</title></head><body><h1>file not found</h1></body></html>";
+			http_reply_msg = "Resource not found";
+			http_reply_body = "<html><head><title>Resource not found</title></head><body><h1>Resource not found</h1><br>This HTTP is very limited.</body></html>";
 			http_reply_body_file = NULL;
 			http_reply_content_type = "text/html";
 			http_reply_content_length = strlen(http_reply_body);
