@@ -183,7 +183,6 @@ int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, webdraw_event_t typ
 	}
 
 	if (curr_sess->imgptr && type == WEBDRAW_EVENT_CLICK) {
-//		void gdImageFilledArc(gdImagePtr im, int cx, int cy, int w, int h, int s, int e, int color, int style) (FUNCTION)
 		gdImageFilledArc(curr_sess->imgptr, x, y, 5, 5, 0, 360, curr_sess->img_color_black, gdArc);
 	}
 
