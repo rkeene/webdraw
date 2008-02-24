@@ -1,6 +1,7 @@
 CFLAGS = -Wall -Werror -pthread -g3
 LDFLAGS = $(LIBS)
 LIBS = -lpthread -lgd
+WEBDIR = /web/rkeene/tmp/webdraw/
 
 serv: serv.o
 serv.o: serv.c
@@ -13,7 +14,8 @@ serv.exe: serv.c
 put-web:
 	$(MAKE) clean serv.exe
 	rm -f *.o
-	cp * /web/rkeene/tmp/webdraw/
+	cp * $(WEBDIR)/
+	rm -f $(WEBDIR)/*.html
 
 clean:
 	rm -f serv serv.exe *.o
