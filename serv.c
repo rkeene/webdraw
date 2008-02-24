@@ -398,9 +398,9 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 				http_reply_body_file = NULL;
 				http_reply_content_length = strlen(http_reply_body);
 			}
-		} else if (strncmp(request_line_resource, "/dynamic/image?", 7) == 0) {
+		} else if (strncmp(request_line_resource, "/dynamic/image?", 15) == 0) {
 			/* Return an image */
-			imginfo = get_image_str(request_line_resource + 7);
+			imginfo = get_image_str(request_line_resource + 15);
 
 			if (imginfo) {
 				http_reply_code = 200;
