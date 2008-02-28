@@ -227,7 +227,7 @@ int handle_event_str(char *str, webdraw_event_t type) {
 THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	ssize_t bytes_recv;
 	size_t buflen, bufused;
-	char buf[16384], *buf_p, *request_end_p;
+	char buf[16384], *buf_p, *request_end_p = NULL;
 	char *request_line, *request_line_end_p, *request_line_operation, *request_line_resource, *request_line_protocol;
 	char *curr_header_p, *next_header_p, *curr_header_var, *curr_header_val;
 	int fd, *fd_p;
@@ -239,7 +239,7 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	size_t bytes_to_send, bytes_to_read;
 	char reply_buf[1024], *reply_buf_p, copy_buf[8192];
 	char *http_reply_msg, *http_reply_body, *http_reply_body_file, *http_reply_content_type;
-	int http_reply_code, http_reply_content_length;
+	int http_reply_code, http_reply_content_length = 0;
 	int reply_buf_len;
 	int stat_ret, event_ret;
 	int srcfd;
@@ -284,7 +284,12 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 			/* We do not handle POST requests */
 			break;
 		}
+
 		if (abort) {
+			break;
+		}
+
+		if (!request_end_p) {
 			break;
 		}
 
