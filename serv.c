@@ -372,6 +372,9 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 		}
 
 		/* Process request */
+#ifndef NDEBUG
+		printf("GET %s\n", request_line_resource);
+#endif
 		if (strncmp(request_line_resource, "/event/", 7) == 0) {
 			/* Process an event */
 			if (strncmp(request_line_resource + 7, "move?", 5) == 0) {
@@ -578,11 +581,7 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	close(fd);
 	free(fd_p);
 
-#ifdef _WIN32
-	return(0);
-#else
-	return(NULL);
-#endif
+	return((THREAD_FUNCTION_RETURN) 0);
 }
 
 int main(int argc, char **argv) {

@@ -22,8 +22,9 @@
 
 		if (!eventid) {
 			// MSIE
-			pos_x = window.event.x - imgobj.x;
-			pos_y = window.event.y - imgobj.y;
+			// XXX: How do we get the X and Y position of an IMG object in IE ? :-(
+			pos_x = window.event.x;
+			pos_y = window.event.y;
 		} else {
 			// Everyone else.
 			pos_x = eventid.pageX - imgobj.x;
