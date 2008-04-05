@@ -1,0 +1,13 @@
+#! /bin/bash
+
+rm -rf build
+
+make distclean
+
+make serv.exe
+
+mv serv.exe serv.exe.tmp
+
+make distclean
+
+mv serv.exe.tmp serv.exe

@@ -1,0 +1,18 @@
+A discussion of the uses and limitations of server-side mouse tracking:
+
+    * Uses:
+          o Web based versions of traditional interaction systems:
+                + Web based VNC (Remote Frame Buffer) client (e.g., ajaxvnc)
+                + Web based Remote Desktop (Windows RDP) client (e.g., ajaxrd)
+                + Web based toolkit (e.g., TkWeb)
+                + Web based presentation layer (e.g., WebUI)
+          o Advertisment
+                + A method to detect if people are viewing your page actively (if they, their mouse will probably be moving)
+                + Do people move their mouses in any particular pattern over your advertisement that might indicate that care about it at all ?
+          o Usability Studies
+                + Conduct research into how people are using your web page
+          o Malicious
+                + Can your mouse movement be used against you in some interesting ways ?
+    * Limitations:
+          o Speed
+          o Time
