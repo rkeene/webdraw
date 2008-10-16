@@ -14,7 +14,8 @@ serv.exe: serv.c
 put-web:
 	$(MAKE) clean serv.exe
 	rm -f *.o
-	cp * $(WEBDIR)/
+	cp * "$(WEBDIR)/"
+	rm -f "$(WEBDIR)/HEADER"
 
 clean:
 	rm -f serv serv.exe *.o
