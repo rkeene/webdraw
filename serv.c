@@ -49,6 +49,7 @@ typedef enum {
 	WEBDRAW_EVENT_CLICK,
 } webdraw_event_t;
 
+void handle_sigsegv(const int signal);
 
 struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExisting) {
 	struct session_info_st *ret = NULL, *chk_session_list;
@@ -172,18 +173,18 @@ int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, webdraw_event_t typ
 
 			if (curr_sess->imgptr) {
 				curr_sess->img_color_black = gdImageColorAllocate(curr_sess->imgptr, 0, 0, 0); 
+				gdImageSetAntiAliased(curr_sess->imgptr, curr_sess->img_color_black);
 			}
 		}
 	}
 
 	if (curr_sess->imgptr && curr_sess->lastx != 65535 && curr_sess->lasty != 65535) {
 		/* Update image */
-		gdImageSetAntiAliased(curr_sess->imgptr, curr_sess->img_color_black);
 		gdImageLine(curr_sess->imgptr, curr_sess->lastx, curr_sess->lasty, x, y, gdAntiAliased);
 	}
 
 	if (curr_sess->imgptr && type == WEBDRAW_EVENT_CLICK) {
-		gdImageFilledArc(curr_sess->imgptr, x, y, 5, 5, 0, 360, curr_sess->img_color_black, gdArc);
+		gdImageFilledArc(curr_sess->imgptr, x, y, 5, 5, 0, 360, gdAntiAliased, gdArc);
 	}
 
 	curr_sess->lastx = x;
@@ -677,8 +678,9 @@ int main(int argc, char **argv) {
 		/* Create worker thread for this request */
 		pthcreate_ret = pthread_create(&curr_thread, NULL, handle_connection, currfd_copy);
 		if (pthcreate_ret != 0) {
-			fprintf(stderr, "Error creating thread, aborting. pthread_create() returned %i\n", pthcreate_ret);
-			return(EXIT_FAILURE);
+			fprintf(stderr, "Error creating thread, closing socket and hoping for the best. pthread_create() returned %i\n", pthcreate_ret);
+			free(currfd_copy);
+			close(currfd);
 		}
 	}
 
