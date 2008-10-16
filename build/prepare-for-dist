@@ -2,6 +2,8 @@
 
 rm -rf build
 
+make put-web
+
 make distclean
 
 make serv.exe
