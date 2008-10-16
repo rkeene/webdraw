@@ -49,8 +49,6 @@ typedef enum {
 	WEBDRAW_EVENT_CLICK,
 } webdraw_event_t;
 
-void handle_sigsegv(const int signal);
-
 struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExisting) {
 	struct session_info_st *ret = NULL, *chk_session_list;
 
