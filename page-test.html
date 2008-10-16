@@ -14,6 +14,8 @@
 	var responsiveness = 50;
 	var max_flush_interval = 2048;
 	var session_id = Math.floor(Math.random() * 2147483647);
+	var last_pos_x = -1;
+	var last_pos_y = -1;
 
 	function sendUpdate(eventid, type, imgobj) {
 		var pos_x;
@@ -29,6 +31,11 @@
 			// Everyone else.
 			pos_x = eventid.pageX - imgobj.x;
 			pos_y = eventid.pageY - imgobj.y;
+		}
+
+		// No reason to resend if no movement has occured
+		if (last_pos_x == pos_x && last_pos_y == pos_y) {
+			return;
 		}
 
 		// Try to get the right object for different browser
@@ -105,6 +112,8 @@
 		// Send AJAX event
 		xmlHttp.open("get", "/event/" + type + "?" + session_id + "," + pos_x + "," + pos_y);
 		xmlHttp.send(null);
+		last_pos_x = pos_x;
+		last_pos_y = pos_y;
 
 		// Update status
 		document.getElementById('status_cell').innerHTML = "Status: XMIT (Sent: " + requests_sent + ")";
