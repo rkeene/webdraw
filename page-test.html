@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Draw Web</title>
+    <title>Web Draw</title>
     <script type="text/javascript">
 <!--
 	var xmlHttp = null;
@@ -11,11 +11,12 @@
 	var flush_interval = 48;
 	var last_request_time = 0;
 	var last_update = 0;
-	var responsiveness = 50;
+	var responsiveness = 100;
 	var max_flush_interval = 2048;
 	var session_id = Math.floor(Math.random() * 2147483647);
 	var last_pos_x = -1;
 	var last_pos_y = -1;
+      var request_idx = 0;
 
 	function sendUpdate(eventid, type, imgobj) {
 		var pos_x;
@@ -86,9 +87,9 @@
 			// the buffer atmost 500ms desynced
 			curr_date = new Date();
 			request_time = Math.ceil((curr_date.getTime() - last_request_time) / num_requests);
-			if (request_time > responsiveness) {
+			if ((request_time * flush_interval) > responsiveness) {
 				flush_interval = Math.ceil(flush_interval / 2);
-			} else if (request_time < (responsiveness / 2)) {
+			} else if ((request_time * flush_interval) < (responsiveness / 2)) {
 				flush_interval *= 2;
 			}
 			if (flush_interval < 1) {
@@ -112,10 +113,11 @@
 		}
 
 		// Send AJAX event
-		xmlHttp.open("get", "/event/" + type + "?" + session_id + "," + pos_x + "," + pos_y);
+		xmlHttp.open("get", "/event/" + type + "?" + session_id + "," + pos_x + "," + pos_y + "," + request_idx);
 		xmlHttp.send(null);
 		last_pos_x = pos_x;
 		last_pos_y = pos_y;
+		request_idx++;
 
 		// Update status
 		document.getElementById('status_cell').innerHTML = "Status: XMIT (Sent: " + requests_sent + ")";
