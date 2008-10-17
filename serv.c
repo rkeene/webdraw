@@ -165,6 +165,9 @@ int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, uint32_t counter, w
 
 	if (type == WEBDRAW_EVENT_MOVE && counter != 0) {
 		if (counter < curr_sess->lastcnt) {
+#ifndef NDEBUG
+			printf("Ignoring out of order move request (sess=%lu, cnt=%lu, lastcnt=%lu)\n", (unsigned long) sessionid, (unsigned long) counter, (unsigned long) curr_sess->lastcnt);
+#endif
 			return(-1);
 		}
 
