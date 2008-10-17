@@ -32,6 +32,7 @@ struct session_info_st {
 	pthread_mutex_t imgptr_mut;
 	uint16_t lastx;
 	uint16_t lasty;
+	uint32_t lastcnt;
 	int img_color_black;
 	time_t last_used_time;
 	struct session_info_st *_next;
@@ -71,6 +72,7 @@ struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExi
 			ret->last_used_time = 0;
 			ret->lastx = 65535;
 			ret->lasty = 65535;
+			ret->lastcnt = 0;
 			pthread_mutex_init(&ret->imgptr_mut, NULL);
 
 			ret->_next = session_list;
@@ -151,7 +153,7 @@ struct image_info_st *get_image_str(const char *sessionid_str) {
 	return(get_image(sessionid));
 }
 
-int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, webdraw_event_t type) {
+int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, uint32_t counter, webdraw_event_t type) {
 	struct session_info_st *curr_sess = NULL;
 	FILE *pngfp;
 
@@ -159,6 +161,14 @@ int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, webdraw_event_t typ
 
 	if (!curr_sess) {
 		return(-1);
+	}
+
+	if (type == WEBDRAW_EVENT_MOVE && counter != 0) {
+		if (counter < curr_sess->lastcnt) {
+			return(-1);
+		}
+
+		curr_sess->lastcnt = counter;
 	}
 
 	/* Update session with new data */
@@ -182,7 +192,7 @@ int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, webdraw_event_t typ
 	}
 
 	if (curr_sess->imgptr && type == WEBDRAW_EVENT_CLICK) {
-		gdImageFilledArc(curr_sess->imgptr, x, y, 5, 5, 0, 360, gdAntiAliased, gdArc);
+		gdImageFilledArc(curr_sess->imgptr, x, y, 6, 6, 0, 360, gdAntiAliased, gdArc);
 	}
 
 	curr_sess->lastx = x;
@@ -196,9 +206,9 @@ int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, webdraw_event_t typ
 }
 
 int handle_event_str(char *str, webdraw_event_t type) {
-	uint32_t sessionid;
+	uint32_t sessionid, counter;
 	uint16_t x, y;
-	char *sessionid_str, *x_str, *y_str;
+	char *sessionid_str, *x_str, *y_str, *counter_str;
 
 	sessionid_str = str;
 	x_str = strchr(sessionid_str, ',');
@@ -215,11 +225,20 @@ int handle_event_str(char *str, webdraw_event_t type) {
 	*y_str = '\0';
 	y_str++;
 
+	counter_str = strchr(y_str, ',');
+	if (counter_str) {
+		*counter_str = '\0';
+		counter_str++;
+		counter = strtoul(counter_str, NULL, 10);
+	} else {
+		counter = 0;
+	}
+
 	sessionid = strtoul(sessionid_str, NULL, 10);
 	x = strtoul(x_str, NULL, 10);
 	y = strtoul(y_str, NULL, 10);
 
-	return(handle_event(sessionid, x, y, type));
+	return(handle_event(sessionid, x, y, counter, type));
 }
 
 /* Not HTTP/1.0 compliant, yet */
