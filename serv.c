@@ -443,7 +443,7 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 				http_reply_body_file = NULL;
 				http_reply_content_length = strlen(http_reply_body);
 			}
-		} else if (strcmp(request_line_resource, "/static/page.html") == 0) {
+		} else if (strcmp(request_line_resource, "/static/page.html") == 0 || strcmp(request_line_resource, "/") == 0 || strcmp(request_line_resource, "") == 0) {
 			/* Return a file */
 			http_reply_code = 200;
 			http_reply_msg = "OK";
