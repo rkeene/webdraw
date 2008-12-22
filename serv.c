@@ -698,9 +698,10 @@ int main(int argc, char **argv) {
 		/* Create worker thread for this request */
 		pthcreate_ret = pthread_create(&curr_thread, NULL, handle_connection, currfd_copy);
 		if (pthcreate_ret != 0) {
-			fprintf(stderr, "Error creating thread, closing socket and hoping for the best. pthread_create() returned %i\n", pthcreate_ret);
+			fprintf(stderr, "Error creating thread, closing socket and aborting. pthread_create() returned %i\n", pthcreate_ret);
 			free(currfd_copy);
 			close(currfd);
+			break;
 		}
 	}
 
