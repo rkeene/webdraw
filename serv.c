@@ -3,6 +3,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <signal.h>
+#else
+#define __USE_W32_SOCKETS 1
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -19,6 +21,9 @@
 
 /* Pthreads, or on win32, emulated pthreads */
 #include "win32-pthread-emul.h"
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#endif
 
 /* Win32 requires O_BINARY as an option to open(), but noone else even has it defined */
 #ifndef O_BINARY
