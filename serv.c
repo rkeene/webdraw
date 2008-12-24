@@ -394,7 +394,19 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 
 		/* Process request */
 #ifndef NDEBUG
-		printf("GET %s\n", request_line_resource);
+		{
+			int gpn_ret;
+			struct sockaddr_in peerinfo;
+			socklen_t peerinfolen = sizeof(peerinfo);
+
+			gpn_ret = getpeername(fd, (struct sockaddr *) &peerinfo, &peerinfolen);
+
+			if (gpn_ret == 0) {
+				printf("[%s] GET %s\n", inet_ntoa(peerinfo.sin_addr), request_line_resource);
+			} else {
+				printf("[??.??.??.??] GET %s\n", request_line_resource);
+			}
+		}
 #endif
 		if (strncmp(request_line_resource, "/event/", 7) == 0) {
 			/* Process an event */
