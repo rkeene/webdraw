@@ -2,11 +2,11 @@
 
 rm -rf build
 
-make put-web
+make put-web || exit 1
 
 make distclean
 
-make serv.exe
+make serv.exe || exit 1
 
 mv serv.exe serv.exe.tmp
 
