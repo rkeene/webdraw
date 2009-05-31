@@ -24,7 +24,7 @@
 #    define pthread_attr_t DWORD
 #    define pthread_create(thhandle, attr, thfunc, tharg) ((int) ((*thhandle = (HANDLE) _beginthreadex(NULL, 0, (THREAD_FUNCTION_PROTO) thfunc, tharg, 0, NULL)) == NULL))
 #    define pthread_join(thread, result) ((WaitForSingleObject((thread), INFINITE) != WAIT_OBJECT_0) || !CloseHandle(thread))
-#    define pthread_detach(thread) { if (((void *) thread) != NULL) { CloseHandle((void *) thread); }}
+#    define pthread_detach(thread) /**/
 #    define thread_sleep(nms) Sleep(nms)
 #    define pthread_cancel(thread) TerminateThread(thread, 0)
 #    define ts_key_create(ts_key, destructor) {ts_key = TlsAlloc();}
