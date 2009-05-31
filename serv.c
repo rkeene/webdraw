@@ -265,6 +265,7 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	size_t bytes_to_send, bytes_to_read;
 	char reply_buf[1024], *reply_buf_p, copy_buf[8192];
 	char *http_reply_msg, *http_reply_body, *http_reply_body_file, *http_reply_content_type;
+	int pthdetach;
 	int http_reply_code, http_reply_content_length = 0;
 	int reply_buf_len;
 	int stat_ret, event_ret;
@@ -622,7 +623,12 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	close(fd);
 	free(fd_p);
 
-	pthread_detach(pthread_self());
+	pthdetach = pthread_detach(pthread_self());
+#ifndef NDEBUG
+	if (pthdetach != 0) {
+		printf("[%llx] Error detaching thread: pthread_detach() returns %i\n", (unsigned long long) pthread_self(), pthdetach);
+	}
+#endif
 
 	return((THREAD_FUNCTION_RETURN) 0);
 }
