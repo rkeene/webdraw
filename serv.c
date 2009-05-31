@@ -407,9 +407,9 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 			gpn_ret = getpeername(fd, (struct sockaddr *) &peerinfo, &peerinfolen);
 
 			if (gpn_ret == 0) {
-				printf("[%s] GET %s\n", inet_ntoa(peerinfo.sin_addr), request_line_resource);
+				printf("[%llx] [%s] GET %s\n", (unsigned long long) pthread_self(), inet_ntoa(peerinfo.sin_addr), request_line_resource);
 			} else {
-				printf("[??.??.??.??] GET %s\n", request_line_resource);
+				printf("[%llx] [??.??.??.??] GET %s\n", (unsigned long long) pthread_self(), request_line_resource);
 			}
 		}
 #endif
@@ -615,9 +615,14 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 		imginfo = NULL;
 	}
 
+#ifndef NDEBUG
+	printf("[%llx] Thread terminating\n", (unsigned long long) pthread_self());
+#endif
 
 	close(fd);
 	free(fd_p);
+
+	pthread_detach(pthread_self());
 
 	return((THREAD_FUNCTION_RETURN) 0);
 }
