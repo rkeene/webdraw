@@ -7,6 +7,7 @@ make put-web || exit 1
 make distclean
 
 make serv.exe || exit 1
+i586-mingw32msvc-strip serv.exe >/dev/null 2>/dev/null
 
 mv serv.exe serv.exe.tmp
 
