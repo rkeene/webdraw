@@ -74,7 +74,7 @@ struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExi
 		if (ret) {
 			ret->sessionid = sessionid;
 			ret->imgptr = NULL;
-			ret->last_used_time = 0;
+			ret->last_used_time = time(NULL);
 			ret->lastx = 65535;
 			ret->lasty = 65535;
 			ret->lastcnt = 0;
@@ -102,12 +102,10 @@ void cleanup_sessions(int session_age_limit) {
 		next = chk_session_list->_next;
 
 		if (chk_session_list->last_used_time < expire_time) {
-			if (chk_session_list) {
-				if (chk_session_list->imgptr) {
-					gdImageDestroy(chk_session_list->imgptr);
-				}
-				pthread_mutex_destroy(&chk_session_list->imgptr_mut);
+			if (chk_session_list->imgptr) {
+				gdImageDestroy(chk_session_list->imgptr);
 			}
+			pthread_mutex_destroy(&chk_session_list->imgptr_mut);
 
 			if (session_list == chk_session_list) {
 				session_list = next;
