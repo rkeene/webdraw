@@ -1,3 +1,7 @@
+/*
+ * The WebDraw Project is released without copyright for use as public domain.
+ */
+
 #ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
