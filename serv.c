@@ -636,8 +636,6 @@ static void daemonize(void) {
 
 	dummyfd = open("/dev/null", O_RDWR);
 
-	chdir("/");
-	
 	dup2(dummyfd, STDIN_FILENO);
 	dup2(dummyfd, STDOUT_FILENO);
 	dup2(dummyfd, STDERR_FILENO);
