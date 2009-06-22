@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Werror -pthread -O3
+CFLAGS = -Wall -Werror -pthread -O3 -DNDEBUG=1
 LDFLAGS = $(LIBS)
 LIBS = -lpthread -lgd
 WEBDIR = /web/rkeene/projects/webdraw/

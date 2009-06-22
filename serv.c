@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/wait.h>
 #include <signal.h>
 #else
 #define __USE_W32_SOCKETS 1
@@ -59,7 +60,7 @@ typedef enum {
 	WEBDRAW_EVENT_CLICK,
 } webdraw_event_t;
 
-struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExisting) {
+static struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExisting) {
 	struct session_info_st *ret = NULL, *chk_session_list;
 
 	/* search for an existing session */
@@ -94,7 +95,7 @@ struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExi
 	return(ret);
 }
 
-void cleanup_sessions(int session_age_limit) {
+static void cleanup_sessions(int session_age_limit) {
 	struct session_info_st *chk_session_list, *next, *prev = NULL;
 	time_t expire_time;
 
@@ -130,7 +131,7 @@ void cleanup_sessions(int session_age_limit) {
 	return;
 }
 
-struct image_info_st *get_image(uint32_t sessionid) {
+static struct image_info_st *get_image(uint32_t sessionid) {
 	struct image_info_st *ret;
 	struct session_info_st *curr_sess = NULL;
 
@@ -152,7 +153,7 @@ struct image_info_st *get_image(uint32_t sessionid) {
 	return(ret);
 }
 
-struct image_info_st *get_image_str(const char *sessionid_str) {
+static struct image_info_st *get_image_str(const char *sessionid_str) {
 	uint32_t sessionid;
 
 	sessionid = strtoul(sessionid_str, NULL, 10);
@@ -160,7 +161,7 @@ struct image_info_st *get_image_str(const char *sessionid_str) {
 	return(get_image(sessionid));
 }
 
-int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, uint32_t counter, webdraw_event_t type) {
+static int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, uint32_t counter, webdraw_event_t type) {
 	struct session_info_st *curr_sess = NULL;
 	FILE *pngfp;
 
@@ -215,7 +216,7 @@ int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, uint32_t counter, w
 	return(0);
 }
 
-int handle_event_str(char *str, webdraw_event_t type) {
+static int handle_event_str(char *str, webdraw_event_t type) {
 	uint32_t sessionid, counter;
 	uint16_t x, y;
 	char *sessionid_str, *x_str, *y_str, *counter_str;
@@ -629,6 +630,37 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	return((THREAD_FUNCTION_RETURN) 0);
 }
 
+static void daemonize(void) {
+#ifndef _WIN32
+	int dummyfd;
+
+	dummyfd = open("/dev/null", O_RDWR);
+
+	chdir("/");
+	
+	dup2(dummyfd, STDIN_FILENO);
+	dup2(dummyfd, STDOUT_FILENO);
+	dup2(dummyfd, STDERR_FILENO);
+
+	/* Parent */
+	if (fork() != 0) {
+		/* Parent */
+		while (wait(NULL) == -1) {
+			/* Busy loop */
+		}
+	} else {
+		/* Child */
+		if (fork() == 0) {
+			/* Grandchild */
+			return;
+		}
+	}
+	exit(EXIT_SUCCESS);
+#endif
+
+	return;
+}
+
 int main(int argc, char **argv) {
 	struct sockaddr_in localaddr;
 	pthread_t curr_thread;
@@ -700,6 +732,8 @@ int main(int argc, char **argv) {
 #ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 #endif
+
+	daemonize();
 
 	/* Handle incoming connections and create worker threads to handle them */
 	while (1) {
