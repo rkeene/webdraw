@@ -41,8 +41,8 @@
 #    define pthread_mutex_t HANDLE
 #    define pthread_cond_t HANDLE
 #    define pthread_mutex_lock(pobject) WaitForSingleObject(*pobject, INFINITE)
-#    define pthread_mutex_unlock(pobject) ReleaseMutex(*pobject)
-#    define pthread_mutex_init(pobject,pattr) (*pobject=CreateMutex(NULL, FALSE, NULL))
+#    define pthread_mutex_unlock(pobject) (!ReleaseMutex(*pobject))
+#    define pthread_mutex_init(pobject,pattr) ((*pobject=CreateMutex(NULL, FALSE, NULL)) == NULL)
 #    define pthread_cond_init(pobject,pattr) (*pobject=CreateEvent(NULL, FALSE, FALSE, NULL))
 #    define pthread_mutex_destroy(pobject) CloseHandle(*pobject)
 #    define pthread_cond_destroy(pobject) CloseHandle(*pobject)
