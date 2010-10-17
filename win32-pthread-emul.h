@@ -14,7 +14,13 @@
 
 /* Thread management macros */
 #  ifdef _WIN32
-#    define _WIN32_WINNT 0x500 /* WINBASE.H - Enable SignalObjectAndWait */
+#    ifdef _WIN32_WINNT
+#      if _WIN32_WINNT < 0x500
+#        error "Must define _WIN32_WINNT greater than or equal to 0x0500"
+#      endif
+#    else
+#      define _WIN32_WINNT 0x500 /* WINBASE.H - Enable SignalObjectAndWait */
+#    endif
 #    include <process.h>
 #    include <windows.h>
 #    define THREAD_FUNCTION_PROTO THREAD_FUNCTION_RETURN (__stdcall *) (void *)

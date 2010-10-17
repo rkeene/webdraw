@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
@@ -62,9 +63,13 @@ typedef enum {
 
 static struct session_info_st *find_session_info(uint32_t sessionid, int createIfNotExisting) {
 	struct session_info_st *ret = NULL, *chk_session_list;
+	int pthr_ret;
 
 	/* search for an existing session */
-	pthread_mutex_lock(&session_list_mut);
+	pthr_ret = pthread_mutex_lock(&session_list_mut);
+	if (pthr_ret != 0) {
+		return(NULL);
+	}
 
 	for (chk_session_list = session_list; chk_session_list; chk_session_list = chk_session_list->_next) {
 		if (chk_session_list->sessionid == sessionid) {
@@ -83,14 +88,19 @@ static struct session_info_st *find_session_info(uint32_t sessionid, int createI
 			ret->lastx = 65535;
 			ret->lasty = 65535;
 			ret->lastcnt = 0;
-			pthread_mutex_init(&ret->imgptr_mut, NULL);
+			pthr_ret = pthread_mutex_init(&ret->imgptr_mut, NULL);
+			if (pthr_ret != 0) {
+				free(ret);
+
+				return(NULL);
+			}
 
 			ret->_next = session_list;
 			session_list = ret;
 		}
 	}
 
-	pthread_mutex_unlock(&session_list_mut);
+	pthr_ret = pthread_mutex_unlock(&session_list_mut);
 
 	return(ret);
 }
@@ -98,10 +108,14 @@ static struct session_info_st *find_session_info(uint32_t sessionid, int createI
 static void cleanup_sessions(int session_age_limit) {
 	struct session_info_st *chk_session_list, *next, *prev = NULL;
 	time_t expire_time;
+	int pthr_ret;
 
 	expire_time = time(NULL) - session_age_limit;
 
-	pthread_mutex_lock(&session_list_mut);
+	pthr_ret = pthread_mutex_lock(&session_list_mut);
+	if (pthr_ret != 0) {
+		return;
+	}
 
 	for (chk_session_list = session_list; chk_session_list; chk_session_list = next) {
 		next = chk_session_list->_next;
@@ -126,7 +140,7 @@ static void cleanup_sessions(int session_age_limit) {
 		}
 	}
 
-	pthread_mutex_unlock(&session_list_mut);
+	pthr_ret = pthread_mutex_unlock(&session_list_mut);
 
 	return;
 }
@@ -134,6 +148,7 @@ static void cleanup_sessions(int session_age_limit) {
 static struct image_info_st *get_image(uint32_t sessionid) {
 	struct image_info_st *ret;
 	struct session_info_st *curr_sess = NULL;
+	int pthr_ret;
 
 	curr_sess = find_session_info(sessionid, 0);
 
@@ -146,9 +161,14 @@ static struct image_info_st *get_image(uint32_t sessionid) {
 		return(NULL);
 	}
 
-	pthread_mutex_lock(&curr_sess->imgptr_mut);
+	pthr_ret = pthread_mutex_lock(&curr_sess->imgptr_mut);
+	if (pthr_ret != 0) {
+		return(NULL);
+	}
+
 	ret->imgbuf = gdImagePngPtr(curr_sess->imgptr, &ret->imgbuflen);
-	pthread_mutex_unlock(&curr_sess->imgptr_mut);
+
+	pthr_ret = pthread_mutex_unlock(&curr_sess->imgptr_mut);
 
 	return(ret);
 }
@@ -164,6 +184,7 @@ static struct image_info_st *get_image_str(const char *sessionid_str) {
 static int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, uint32_t counter, webdraw_event_t type) {
 	struct session_info_st *curr_sess = NULL;
 	FILE *pngfp;
+	int pthr_ret;
 
 	curr_sess = find_session_info(sessionid, 1);
 
@@ -183,7 +204,11 @@ static int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, uint32_t cou
 	}
 
 	/* Update session with new data */
-	pthread_mutex_lock(&curr_sess->imgptr_mut);
+	pthr_ret = pthread_mutex_lock(&curr_sess->imgptr_mut);
+	if (pthr_ret != 0) {
+		return(-1);
+	}
+
 	if (!curr_sess->imgptr) {
 		pngfp = fopen("blank.png", "rb");
 		if (pngfp) {
@@ -208,7 +233,7 @@ static int handle_event(uint32_t sessionid, uint16_t x, uint16_t y, uint32_t cou
 
 	curr_sess->lastx = x;
 	curr_sess->lasty = y;
-	pthread_mutex_unlock(&curr_sess->imgptr_mut);
+	pthr_ret = pthread_mutex_unlock(&curr_sess->imgptr_mut);
 
 	/* Update session information */
 	curr_sess->last_used_time = time(NULL);
@@ -664,6 +689,7 @@ int main(int argc, char **argv) {
 	pthread_t curr_thread;
 	int masterfd, currfd, *currfd_copy;
 	int bind_ret, listen_ret, pthcreate_ret;
+	int pthr_ret;
 	uint16_t parm_port = 8013;
 #ifdef _WIN32
 	/* Win32 Specific Crap */
@@ -681,7 +707,7 @@ int main(int argc, char **argv) {
 #endif
 
 	/* Initialize session list mutex */
-	pthread_mutex_init(&session_list_mut, NULL);
+	pthr_ret = pthread_mutex_init(&session_list_mut, NULL);
 
 
 	/* Setup listening socket on appropriate port */
