@@ -285,7 +285,7 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 	char *request_line, *request_line_end_p, *request_line_operation, *request_line_resource, *request_line_protocol;
 	char *curr_header_p, *next_header_p, *curr_header_var, *curr_header_val;
 	int fd, *fd_p;
-	int abort = 0, close_conn, invalid_request = 0;
+	int abort = 0, close_conn;
 
 	struct image_info_st *imginfo = NULL;
 	struct stat fileinfo;
@@ -370,7 +370,6 @@ THREAD_FUNCTION_RETURN handle_connection(void *arg) {
 
 		if (strcasecmp(request_line_operation, "GET") != 0) {
 			/* We only support GET */
-			invalid_request = 1;
 			break;
 		}
 
@@ -689,7 +688,6 @@ int main(int argc, char **argv) {
 	pthread_t curr_thread;
 	int masterfd, currfd, *currfd_copy;
 	int bind_ret, listen_ret, pthcreate_ret;
-	int pthr_ret;
 	uint16_t parm_port = 8013;
 #ifdef _WIN32
 	/* Win32 Specific Crap */
@@ -707,7 +705,7 @@ int main(int argc, char **argv) {
 #endif
 
 	/* Initialize session list mutex */
-	pthr_ret = pthread_mutex_init(&session_list_mut, NULL);
+	pthread_mutex_init(&session_list_mut, NULL);
 
 
 	/* Setup listening socket on appropriate port */
